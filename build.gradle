@@ -5,6 +5,12 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.6.21' apply false
 }
 
+ext {
+    kotlin_version = "1.6.20"
+    nav_version = "2.4.1"
+    room_version = '2.3.0'
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
