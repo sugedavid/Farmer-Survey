@@ -15,4 +15,12 @@
     <string name="previous">Previous</string>
     <string name="answer">Answer</string>
     <string name="take_photo">Take Photo</string>
+    <string name="log_out">Log Out</string>
+    <string name="survey_completed">Survey Completed</string>
+    <string name="survey_completed_desc">You have completed the survey and your response has been saved successfully!</string>
+    <string name="okay">Okay</string>
+    <string name="photo_title">Take Photo</string>
+    <string name="photo_desc">From the Camera</string>
+    <string name="finish">Finish</string>
+    <string name="survey_submitted">Survey submitted successfully</string>
 </resources>

@@ -5,7 +5,8 @@ import android.content.Context
 import androidx.room.*
 
 @Database(entities = [FarmerSurveyTable::class, QuestionsTable::class,
-    OptionsTable::class, StringsTable::class], version = 1, exportSchema = false)
+    OptionsTable::class, StringsTable::class, UserProfileTable::class, SurveyResponseTable::class],
+    version = 1, exportSchema = false)
 
 abstract class SurveyDatabase : RoomDatabase() {
 

@@ -80,6 +80,9 @@ dependencies {
     implementation "androidx.room:room-ktx:$room_version"
     // Coroutine
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2'
+    // Worker
+    def work_version = "2.7.1"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
 
     // Room dependency
     def room_version = "2.4.1"
