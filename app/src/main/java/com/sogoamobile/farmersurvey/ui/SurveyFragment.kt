@@ -14,23 +14,35 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import com.sogoamobile.farmersurvey.FarmerSurveyApplication
 import com.sogoamobile.farmersurvey.R
+import com.sogoamobile.farmersurvey.database.FarmerSurveyTable
+import com.sogoamobile.farmersurvey.database.OptionsTable
+import com.sogoamobile.farmersurvey.database.QuestionsTable
+import com.sogoamobile.farmersurvey.database.StringsTable
 import com.sogoamobile.farmersurvey.databinding.ActivityLoginBinding
 import com.sogoamobile.farmersurvey.databinding.FragmentSurveyBinding
 import com.sogoamobile.farmersurvey.network.Options
 import com.sogoamobile.farmersurvey.network.Question
 import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModel
+import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModelFactory
 
 
 class SurveyFragment : Fragment() {
 
-    private val sharedViewModel: SurveyViewModel by activityViewModels()
+    private val sharedViewModel: SurveyViewModel by activityViewModels {
+        SurveyViewModelFactory(
+            (activity?.application as FarmerSurveyApplication).database
+                .surveyDao()
+        )
+    }
+
     private var binding: FragmentSurveyBinding? = null
 
     var question = ""
     var questionId = ""
     var index = 0
-    var questions = listOf<Question>()
+    var questions = listOf<QuestionsTable>()
 
     val REQUEST_IMAGE_CAPTURE = 1
 
@@ -53,89 +65,141 @@ class SurveyFragment : Fragment() {
             surveyFragment = this@SurveyFragment
         }
 
-        updateQuestion()
-
-        sharedViewModel.index.observe(viewLifecycleOwner){ item ->
+        sharedViewModel.index.observe(viewLifecycleOwner) { item ->
             index = item
             updateQuestion()
         }
 
         // next
-        binding?.btnNext?.setOnClickListener{
-            if(index == questions.size - 1){
+        binding?.btnNext?.setOnClickListener {
+            if (index == questions.size - 1) {
                 dispatchTakePictureIntent()
             }
             sharedViewModel.incrementIndex(questions.size - 1)
         }
         // previous
-        binding?.btnPrevious?.setOnClickListener{
+        binding?.btnPrevious?.setOnClickListener {
             sharedViewModel.decrementIndex()
         }
 
+        Toast.makeText(requireContext(), sharedViewModel.isFirstTimeLogin.value.toString(), Toast.LENGTH_LONG).show()
+        updateQuestion()
+
     }
 
-    fun updateQuestion(){
-        sharedViewModel.survey.observe(viewLifecycleOwner) { item ->
-            if (item.questions.isNotEmpty()) {
-                Log.d("Survey", item.questions[index].toString())
-                questions = item.questions
-                questionId = questions[index].id
-                question = item.strings["en"]?.get(questionId) ?: ""
+    fun updateQuestion() {
+        // check if there's data in the db
+        if (sharedViewModel.isFirstTimeLogin.value == true) {
+            sharedViewModel.getSurveyFromInternet()
+            sharedViewModel.survey.observe(viewLifecycleOwner) { survey ->
 
-                // update next button
-                if(index == questions.size - 1){
-                    binding?.btnNext?.text = getString(R.string.take_photo)
-                }else{
-                    binding?.btnNext?.text = getString(R.string.next)
+                // save to database
+                for (question in survey.questions) {
+                    sharedViewModel.addQuestion(
+                        QuestionsTable(
+                            question.id,
+                            question.question_type,
+                            question.question_text
+                        )
+                    )
                 }
-                // update previous button
-                if(index == 0){
-                    binding?.btnPrevious?.visibility = View.INVISIBLE
-                }else{
-                    binding?.btnPrevious?.visibility = View.VISIBLE
+
+                survey.strings["en"]?.forEach { item ->
+                    sharedViewModel.addStrings(
+                        StringsTable(item.key, item.value)
+                    )
                 }
-                // update question
-                binding?.txtQuestion?.text = "${index + 1}. $question"
-                // update question type visibility
-                when(questions[index].question_type){
-                    "FREE_TEXT" -> {
-                        binding?.edtSingleLineText?.visibility =  View.VISIBLE
-                        binding?.edtTypeValue?.visibility =  View.GONE
-                        binding?.spnGender?.visibility =  View.GONE
+
+                for (option in survey.questions[1].options) {
+                    Log.d("options", option.toString())
+                    sharedViewModel.addOptions(
+                        OptionsTable(option.value, option.display_text)
+                    )
+                }
+
+                sharedViewModel.updateFirstTimeLogin(false)
+                updateQuestion()
+
+            }
+        } else {
+            sharedViewModel.readQuestions.observe(viewLifecycleOwner) { item ->
+                if (item.isNotEmpty()) {
+                    Log.d("Survey", item[index].toString())
+                    questions = item
+                    questionId = questions[index].id
+
+                    // strings
+                    sharedViewModel.retrieveString(questionId).observe(viewLifecycleOwner) { item ->
+                        question = item?.en ?: ""
+                        // update question
+                        binding?.txtQuestion?.text = "${index + 1}. $question"
                     }
-                    "SELECT_ONE" ->  {
-                        binding?.edtSingleLineText?.visibility =  View.GONE
-                        binding?.edtTypeValue?.visibility =  View.GONE
-                        binding?.spnGender?.visibility =  View.VISIBLE
+
+                    // update next button
+                    if (index == questions.size - 1) {
+                        binding?.btnNext?.text = getString(R.string.take_photo)
+                    } else {
+                        binding?.btnNext?.text = getString(R.string.next)
                     }
-                    "TYPE_VALUE" ->  {
-                        binding?.edtSingleLineText?.visibility =  View.GONE
-                        binding?.edtTypeValue?.visibility =  View.VISIBLE
-                        binding?.spnGender?.visibility =  View.GONE
+                    // update previous button
+                    if (index == 0) {
+                        binding?.btnPrevious?.visibility = View.INVISIBLE
+                    } else {
+                        binding?.btnPrevious?.visibility = View.VISIBLE
                     }
-                    else -> {
-                        binding?.edtSingleLineText?.visibility =  View.GONE
-                        binding?.edtTypeValue?.visibility =  View.GONE
-                        binding?.spnGender?.visibility =  View.GONE
+
+                    // update question type visibility
+                    when (questions[index].question_type) {
+                        "FREE_TEXT" -> {
+                            binding?.edtSingleLineText?.visibility = View.VISIBLE
+                            binding?.edtTypeValue?.visibility = View.GONE
+                            binding?.spnGender?.visibility = View.GONE
+                        }
+                        "SELECT_ONE" -> {
+                            binding?.edtSingleLineText?.visibility = View.GONE
+                            binding?.edtTypeValue?.visibility = View.GONE
+                            binding?.spnGender?.visibility = View.VISIBLE
+                        }
+                        "TYPE_VALUE" -> {
+                            binding?.edtSingleLineText?.visibility = View.GONE
+                            binding?.edtTypeValue?.visibility = View.VISIBLE
+                            binding?.spnGender?.visibility = View.GONE
+                        }
+                        else -> {
+                            binding?.edtSingleLineText?.visibility = View.GONE
+                            binding?.edtTypeValue?.visibility = View.GONE
+                            binding?.spnGender?.visibility = View.GONE
+                        }
+
                     }
 
                 }
+            }
+
+            // options
+            sharedViewModel.readOptions.observe(viewLifecycleOwner) { item ->
                 //Spinner
-                val adapter = ArrayAdapter(requireContext(),
-                    android.R.layout.simple_spinner_item, questions[index].options)
+                val adapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item, item
+                )
                 binding?.spnGender?.adapter = adapter
                 binding?.spnGender?.onItemSelectedListener = object :
                     AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parent: AdapterView<*>,
-                                                view: View, position: Int, id: Long) {
+                    override fun onItemSelected(
+                        parent: AdapterView<*>,
+                        view: View, position: Int, id: Long
+                    ) {
                         binding?.spnGender?.setSelection(position)
                     }
+
                     override fun onNothingSelected(parent: AdapterView<*>) {
                         // write code to perform some action
                     }
                 }
             }
         }
+
     }
 
     private fun dispatchTakePictureIntent() {
