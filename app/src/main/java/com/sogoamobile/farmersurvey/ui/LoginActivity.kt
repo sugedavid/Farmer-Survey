@@ -1,6 +1,7 @@
 package com.sogoamobile.farmersurvey.ui
 
 import android.content.Intent
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
@@ -44,6 +45,7 @@ class LoginActivity : AppCompatActivity() {
                 // navigate to home page
                 viewModel.updateIsLoggedIn(true)
                 startActivity(  Intent(this, MainActivity::class.java))
+                sendEmail()
             }
             else if (!viewModel.isPhoneNumberValid(binding.phoneNumber.text.toString())){
                 Toast.makeText(this, R.string.invalid_phone_number, Toast.LENGTH_SHORT).show()
@@ -57,4 +59,25 @@ class LoginActivity : AppCompatActivity() {
         }
 
     }
+
+    // function to send email on first time login
+    private fun sendEmail() {
+        val mIntent = Intent(Intent.ACTION_SEND)
+
+        mIntent.data = Uri.parse("mailto:")
+        mIntent.type = "text/plain"
+        mIntent.putExtra(Intent.EXTRA_EMAIL, getString(R.string.email_recipient))
+        mIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.email_subject))
+        mIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.email_text))
+
+        try {
+            //start email intent
+            startActivity(Intent.createChooser(mIntent, "Choose Email Client..."))
+        }
+        catch (e: Exception){
+            Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
+        }
+
+    }
+
 }

@@ -79,10 +79,19 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:text="@string/next"
-                    />
+                    android:text="@string/next" />
 
             </RelativeLayout>
+
+            <Button
+                android:id="@+id/btnFinish"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@android:color/holo_red_light"
+                android:layout_marginTop="40dp"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:text="@string/finish" />
 
         </LinearLayout>
 

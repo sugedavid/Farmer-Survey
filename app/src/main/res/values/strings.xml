@@ -23,4 +23,7 @@
     <string name="photo_desc">From the Camera</string>
     <string name="finish">Finish</string>
     <string name="survey_submitted">Survey submitted successfully</string>
+    <string name="email_recipient">tech@pula.io</string>
+    <string name="email_subject">Farmer Survey First Login</string>
+    <string name="email_text">User has installed the app</string>
 </resources>

@@ -102,16 +102,21 @@ class SurveyFragment : Fragment() {
         binding?.btnNext?.setOnClickListener {
             if (index == questions.size - 1) {
                 dispatchTakePictureIntent()
-            } else if (index == questions.size - 1 && imageUri != null) {
-                alertDialog()
             }
-
             saveResponse()
             sharedViewModel.incrementIndex(questions.size - 1)
         }
         // previous btn
         binding?.btnPrevious?.setOnClickListener {
             sharedViewModel.decrementIndex()
+        }
+        // finish btn
+        binding?.btnFinish?.setOnClickListener {
+            saveResponse()
+            // show alert dialog
+            sharedViewModel.resetIndex()
+            alertDialog()
+
         }
         updateQuestion()
 
@@ -172,10 +177,10 @@ class SurveyFragment : Fragment() {
                     // update next button
                     if (index == questions.size - 1) {
                         binding?.btnNext?.text = getString(R.string.take_photo)
-                    } else if (index == questions.size - 1 && imageUri != null) {
-                        binding?.btnNext?.text = getString(R.string.finish)
+
                     } else {
                         binding?.btnNext?.text = getString(R.string.next)
+                        binding?.btnFinish?.visibility = View.GONE
                     }
                     // update previous button
                     if (index == 0) {
@@ -278,9 +283,7 @@ class SurveyFragment : Fragment() {
                     bitmap.toString()
                 )
             )
-            // show alert dialog
-            sharedViewModel.resetIndex()
-            alertDialog()
+            binding?.btnFinish?.visibility = View.VISIBLE
         }
     }
 
@@ -306,4 +309,5 @@ class SurveyFragment : Fragment() {
         }
         builder.show()
     }
+
 }
