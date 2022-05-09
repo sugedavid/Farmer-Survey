@@ -1,7 +1,13 @@
 package com.sogoamobile.farmersurvey.ui
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.opengl.Visibility
 import android.os.Bundle
 import android.provider.MediaStore
@@ -13,25 +19,36 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.sogoamobile.farmersurvey.FarmerSurveyApplication
+import com.sogoamobile.farmersurvey.MainActivity
 import com.sogoamobile.farmersurvey.R
-import com.sogoamobile.farmersurvey.database.FarmerSurveyTable
-import com.sogoamobile.farmersurvey.database.OptionsTable
-import com.sogoamobile.farmersurvey.database.QuestionsTable
-import com.sogoamobile.farmersurvey.database.StringsTable
+import com.sogoamobile.farmersurvey.database.*
 import com.sogoamobile.farmersurvey.databinding.ActivityLoginBinding
 import com.sogoamobile.farmersurvey.databinding.FragmentSurveyBinding
 import com.sogoamobile.farmersurvey.network.Options
 import com.sogoamobile.farmersurvey.network.Question
+import com.sogoamobile.farmersurvey.viewmodel.LoginViewModel
+import com.sogoamobile.farmersurvey.viewmodel.LoginViewModelFactory
 import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModel
 import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModelFactory
+import java.io.FileDescriptor
+import java.io.IOException
 
 
 class SurveyFragment : Fragment() {
 
     private val sharedViewModel: SurveyViewModel by activityViewModels {
         SurveyViewModelFactory(
+            activity?.application as FarmerSurveyApplication
+        )
+    }
+
+    private val viewModel: LoginViewModel by viewModels {
+        LoginViewModelFactory(
             (activity?.application as FarmerSurveyApplication).database
                 .surveyDao()
         )
@@ -43,8 +60,10 @@ class SurveyFragment : Fragment() {
     var questionId = ""
     var index = 0
     var questions = listOf<QuestionsTable>()
-
-    val REQUEST_IMAGE_CAPTURE = 1
+    var questionType = ""
+    var spGender = ""
+    private val REQUEST_IMAGE_CAPTURE = 1
+    private var imageUri: Uri? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,6 +78,15 @@ class SurveyFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel.isLoggedIn.observe(viewLifecycleOwner) { item ->
+            // check if user is logged in & navigate to Log in page
+            if (!item.isLoggedIn) {
+                startActivity(Intent(requireContext(), LoginActivity::class.java))
+            }
+        }
+
+        sharedViewModel.countDownTimer()
+
         binding?.apply {
             lifecycleOwner = viewLifecycleOwner
             viewModel = sharedViewModel
@@ -70,24 +98,39 @@ class SurveyFragment : Fragment() {
             updateQuestion()
         }
 
-        // next
+        // next btn
         binding?.btnNext?.setOnClickListener {
             if (index == questions.size - 1) {
                 dispatchTakePictureIntent()
+            } else if (index == questions.size - 1 && imageUri != null) {
+                alertDialog()
             }
+
+            saveResponse()
             sharedViewModel.incrementIndex(questions.size - 1)
         }
-        // previous
+        // previous btn
         binding?.btnPrevious?.setOnClickListener {
             sharedViewModel.decrementIndex()
         }
-
-        Toast.makeText(requireContext(), sharedViewModel.isFirstTimeLogin.value.toString(), Toast.LENGTH_LONG).show()
         updateQuestion()
+
+        // options
+        sharedViewModel.survey.observe(viewLifecycleOwner) { survey ->
+            var indexTemp = 0
+            while(survey.questions[indexTemp].options.isEmpty()){
+                indexTemp += 1
+            }
+            for (option in survey.questions[indexTemp].options) {
+                sharedViewModel.addOptions(
+                    OptionsTable(option.value, option.display_text)
+                )
+            }
+        }
 
     }
 
-    fun updateQuestion() {
+    private fun updateQuestion() {
         // check if there's data in the db
         if (sharedViewModel.isFirstTimeLogin.value == true) {
             sharedViewModel.getSurveyFromInternet()
@@ -104,16 +147,10 @@ class SurveyFragment : Fragment() {
                     )
                 }
 
+                // strings
                 survey.strings["en"]?.forEach { item ->
                     sharedViewModel.addStrings(
                         StringsTable(item.key, item.value)
-                    )
-                }
-
-                for (option in survey.questions[1].options) {
-                    Log.d("options", option.toString())
-                    sharedViewModel.addOptions(
-                        OptionsTable(option.value, option.display_text)
                     )
                 }
 
@@ -124,20 +161,19 @@ class SurveyFragment : Fragment() {
         } else {
             sharedViewModel.readQuestions.observe(viewLifecycleOwner) { item ->
                 if (item.isNotEmpty()) {
-                    Log.d("Survey", item[index].toString())
                     questions = item
                     questionId = questions[index].id
-
                     // strings
                     sharedViewModel.retrieveString(questionId).observe(viewLifecycleOwner) { item ->
                         question = item?.en ?: ""
                         // update question
                         binding?.txtQuestion?.text = "${index + 1}. $question"
                     }
-
                     // update next button
                     if (index == questions.size - 1) {
                         binding?.btnNext?.text = getString(R.string.take_photo)
+                    } else if (index == questions.size - 1 && imageUri != null) {
+                        binding?.btnNext?.text = getString(R.string.finish)
                     } else {
                         binding?.btnNext?.text = getString(R.string.next)
                     }
@@ -149,6 +185,7 @@ class SurveyFragment : Fragment() {
                     }
 
                     // update question type visibility
+                    questionType = questions[index].question_type
                     when (questions[index].question_type) {
                         "FREE_TEXT" -> {
                             binding?.edtSingleLineText?.visibility = View.VISIBLE
@@ -170,9 +207,7 @@ class SurveyFragment : Fragment() {
                             binding?.edtTypeValue?.visibility = View.GONE
                             binding?.spnGender?.visibility = View.GONE
                         }
-
                     }
-
                 }
             }
 
@@ -191,24 +226,84 @@ class SurveyFragment : Fragment() {
                         view: View, position: Int, id: Long
                     ) {
                         binding?.spnGender?.setSelection(position)
+                        spGender = binding?.spnGender?.selectedItem.toString()
                     }
 
                     override fun onNothingSelected(parent: AdapterView<*>) {
-                        // write code to perform some action
                     }
                 }
             }
         }
-
     }
 
     private fun dispatchTakePictureIntent() {
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        try {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-        } catch (e: ActivityNotFoundException) {
-            // display error state to the user
+        val values = ContentValues()
+        values.put(MediaStore.Images.Media.TITLE, getString(R.string.photo_title))
+        values.put(MediaStore.Images.Media.DESCRIPTION, getString(R.string.photo_desc))
+        imageUri =
+            activity?.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+        startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE)
+    }
+
+    private fun saveResponse() {
+        var answer = ""
+        when (questionType) {
+            "FREE_TEXT" -> {
+                answer = binding?.edtSingleLineText?.text.toString()
+            }
+            "SELECT_ONE" -> {
+                answer = binding?.spnGender?.selectedItem.toString()
+            }
+            "TYPE_VALUE" -> {
+                answer = binding?.edtTypeValue?.text.toString()
+            }
+            else -> {
+                binding?.edtSingleLineText?.visibility = View.GONE
+                binding?.edtTypeValue?.visibility = View.GONE
+                binding?.spnGender?.visibility = View.GONE
+            }
+        }
+        sharedViewModel.addSurveyResponse(SurveyResponseTable(questionId, answer))
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
+            val bitmap = uriToBitmap(imageUri!!)
+            sharedViewModel.addSurveyResponse(
+                SurveyResponseTable(
+                    "q_take_photo",
+                    bitmap.toString()
+                )
+            )
+            // show alert dialog
+            sharedViewModel.resetIndex()
+            alertDialog()
         }
     }
 
+    private fun uriToBitmap(selectedFileUri: Uri): Bitmap? {
+        try {
+            val parcelFileDescriptor =
+                activity?.contentResolver?.openFileDescriptor(selectedFileUri, "r")
+            val fileDescriptor: FileDescriptor = parcelFileDescriptor!!.fileDescriptor
+            val image = BitmapFactory.decodeFileDescriptor(fileDescriptor)
+            parcelFileDescriptor.close()
+            return image
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    private fun alertDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle(getString(R.string.survey_completed))
+        builder.setMessage(getString(R.string.survey_completed_desc))
+        builder.setPositiveButton(getString(R.string.okay)) { _, _ ->
+        }
+        builder.show()
+    }
 }

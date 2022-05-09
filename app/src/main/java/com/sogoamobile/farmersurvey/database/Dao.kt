@@ -21,6 +21,12 @@ interface FarmerSurveyDao {
     @Query("select * from farmer_survey")
     fun getSurvey(): Flow<FarmerSurveyTable>
 
+    @Query("select * from user_profile")
+    fun getUserProfile(): Flow<UserProfileTable>
+
+    @Query("select * from survey_responses")
+    fun getSurveyResponse(): Flow<List<SurveyResponseTable>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertToSurvey( farmerSurvey: FarmerSurveyTable)
 
@@ -32,5 +38,11 @@ interface FarmerSurveyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertToStrings( stringsTable: StringsTable)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertToUserProfile( userProfileTable: UserProfileTable)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertToSurveyResponse(surveyResponseTable: SurveyResponseTable)
 
 }

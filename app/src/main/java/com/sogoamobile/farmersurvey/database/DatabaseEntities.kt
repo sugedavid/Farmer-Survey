@@ -1,13 +1,17 @@
 package com.sogoamobile.farmersurvey.database
 
-import androidx.room.Embedded
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import androidx.room.TypeConverter
+import androidx.room.*
 import com.google.gson.Gson
 import com.sogoamobile.farmersurvey.network.Options
 import com.sogoamobile.farmersurvey.network.Question
 import com.sogoamobile.farmersurvey.network.QuestionRepo
+
+@Entity(tableName = "user_profile")
+data class UserProfileTable constructor(
+        @PrimaryKey
+        val id: String,
+        val isLoggedIn: Boolean,
+)
 
 @Entity(tableName = "farmer_survey")
 data class FarmerSurveyTable constructor(
@@ -41,6 +45,13 @@ data class StringsTable constructor(
         @PrimaryKey
         val id: String,
         val en: String,
+)
+
+@Entity(tableName = "survey_responses")
+data class SurveyResponseTable constructor(
+        @PrimaryKey
+        val id: String,
+        val answer: String,
 )
 
 /**
