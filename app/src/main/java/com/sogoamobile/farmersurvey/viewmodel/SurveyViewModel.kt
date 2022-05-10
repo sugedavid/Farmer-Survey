@@ -43,20 +43,21 @@ class SurveyViewModel(private val application: FarmerSurveyApplication) : ViewMo
     init {
         readQuestions = farmerSurveyRepository.readQuestions.asLiveData()
         readOptions = farmerSurveyRepository.readOptions.asLiveData()
-        if(readQuestions.value != null){
-             id = readQuestions.value!![index.value!!].id
+        if (readQuestions.value != null) {
+            id = readQuestions.value!![index.value!!].id
         }
     }
 
     // function that counts down every 15 minutes & runs work request
     // to submit survey response & shows notification once work is done
 
-    fun countDownTimer(){
+    fun countDownTimer() {
         submitResponseWorker()
         val appContext = application.applicationContext
-        val timer = object: CountDownTimer(900000, 1000) {
+        val timer = object : CountDownTimer(900000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
             }
+
             override fun onFinish() {
 
                 makeStatusNotification(appContext.getString(R.string.survey_submitted), appContext)
@@ -82,11 +83,11 @@ class SurveyViewModel(private val application: FarmerSurveyApplication) : ViewMo
 
     }
 
-    fun updateFirstTimeLogin(value: Boolean){
+    fun updateFirstTimeLogin(value: Boolean) {
         _isFirstTimeLogin.value = value
     }
 
-     fun getSurveyFromInternet() {
+    fun getSurveyFromInternet() {
         viewModelScope.launch {
             _status.value = FarmerSurveyApiStatus.LOADING
             try {
@@ -94,24 +95,24 @@ class SurveyViewModel(private val application: FarmerSurveyApplication) : ViewMo
                 _status.value = FarmerSurveyApiStatus.DONE
             } catch (e: Exception) {
                 _status.value = FarmerSurveyApiStatus.ERROR
-                _survey.value = FarmerSurvey("","", listOf(), mapOf())
+                _survey.value = FarmerSurvey("", "", listOf(), mapOf())
             }
         }
     }
 
-    fun incrementIndex(questionsSize: Int){
-        if(_index.value ?: 0 < questionsSize) {
+    fun incrementIndex(questionsSize: Int) {
+        if (_index.value ?: 0 < questionsSize) {
             _index.value = _index.value?.plus(1)
         }
     }
 
-     fun decrementIndex(){
-        if(_index.value?: 0 > 0) {
+    fun decrementIndex() {
+        if (_index.value ?: 0 > 0) {
             _index.value = _index.value?.minus(1)
         }
     }
 
-    fun resetIndex(){
+    fun resetIndex() {
         _index.value = 0
     }
 
@@ -121,31 +122,31 @@ class SurveyViewModel(private val application: FarmerSurveyApplication) : ViewMo
      */
 
     // insert to database using repo
-    fun addSurvey(surveyTable: FarmerSurveyTable){
+    fun addSurvey(surveyTable: FarmerSurveyTable) {
         viewModelScope.launch {
             farmerSurveyRepository.addSurvey(surveyTable)
         }
     }
 
-    fun addQuestion(questionsTable: QuestionsTable){
+    fun addQuestion(questionsTable: QuestionsTable) {
         viewModelScope.launch(Dispatchers.IO) {
             farmerSurveyRepository.addQuestion(questionsTable)
         }
     }
 
-    fun addStrings(stringsTable: StringsTable){
+    fun addStrings(stringsTable: StringsTable) {
         viewModelScope.launch(Dispatchers.IO) {
             farmerSurveyRepository.addStrings(stringsTable)
         }
     }
 
-    fun addOptions(optionsTable: OptionsTable){
+    fun addOptions(optionsTable: OptionsTable) {
         viewModelScope.launch(Dispatchers.IO) {
             farmerSurveyRepository.addOptions(optionsTable)
         }
     }
 
-    fun addSurveyResponse(surveyResponseTable: SurveyResponseTable){
+    fun addSurveyResponse(surveyResponseTable: SurveyResponseTable) {
         viewModelScope.launch(Dispatchers.IO) {
             farmerSurveyRepository.addSurveyResponse(surveyResponseTable)
         }
@@ -166,7 +167,8 @@ class SurveyViewModel(private val application: FarmerSurveyApplication) : ViewMo
     }
 }
 
-class SurveyViewModelFactory(private val application: FarmerSurveyApplication) : ViewModelProvider.Factory {
+class SurveyViewModelFactory(private val application: FarmerSurveyApplication) :
+    ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SurveyViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

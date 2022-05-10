@@ -1,10 +1,6 @@
 package com.sogoamobile.farmersurvey.database
 
 import androidx.room.*
-import com.google.gson.Gson
-import com.sogoamobile.farmersurvey.network.Options
-import com.sogoamobile.farmersurvey.network.Question
-import com.sogoamobile.farmersurvey.network.QuestionRepo
 
 @Entity(tableName = "user_profile")
 data class UserProfileTable constructor(
@@ -53,15 +49,3 @@ data class SurveyResponseTable constructor(
         val id: String,
         val answer: String,
 )
-
-/**
- * Map DatabaseVideos to domain entities
- */
-fun List<QuestionsTable>.asQuestionsDatabaseModel(): List<QuestionRepo> {
-        return map {
-                QuestionRepo(
-                        id = it.id,
-                        question_type = it.question_type,
-                        question_text = it.question_text,)
-        }
-}

@@ -4,7 +4,7 @@ import com.sogoamobile.farmersurvey.database.*
 import kotlinx.coroutines.coroutineScope
 
 /**
- * Repository for fetching survey from the network and storing them on disk
+ * Repository
  */
 
 class FarmerSurveyRepository(private val surveyDao: FarmerSurveyDao)  {

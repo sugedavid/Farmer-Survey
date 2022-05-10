@@ -123,7 +123,7 @@ class SurveyFragment : Fragment() {
         // options
         sharedViewModel.survey.observe(viewLifecycleOwner) { survey ->
             var indexTemp = 0
-            while(survey.questions[indexTemp].options.isEmpty()){
+            while (survey.questions[indexTemp].options.isEmpty()) {
                 indexTemp += 1
             }
             for (option in survey.questions[indexTemp].options) {
