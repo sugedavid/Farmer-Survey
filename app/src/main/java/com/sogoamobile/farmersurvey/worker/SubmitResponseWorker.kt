@@ -11,13 +11,12 @@ import com.sogoamobile.farmersurvey.FarmerSurveyApplication
 import com.sogoamobile.farmersurvey.network.FarmerSurveyApi
 
 private const val TAG = "SubmitResponseWorker"
+
 class SubmitResponseWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
 
     override fun doWork(): Result {
         val appContext = applicationContext
         val surveyResponse = FarmerSurveyApplication().database.surveyDao().getSurveyResponse()
-
-//        makeStatusNotification("Submitting Response", appContext)
 
         return try {
             surveyResponse.asLiveData().value?.let {

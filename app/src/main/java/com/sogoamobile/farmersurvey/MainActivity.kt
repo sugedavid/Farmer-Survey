@@ -6,12 +6,9 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.activity.viewModels
-import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import com.sogoamobile.farmersurvey.databinding.ActivityLoginBinding
 import com.sogoamobile.farmersurvey.viewmodel.LoginViewModel
 import com.sogoamobile.farmersurvey.viewmodel.LoginViewModelFactory
-import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModel
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,7 +18,6 @@ class MainActivity : AppCompatActivity() {
                 .surveyDao()
         )
     }
-    private lateinit var binding: ActivityLoginBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

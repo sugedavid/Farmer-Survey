@@ -8,25 +8,25 @@ import com.sogoamobile.farmersurvey.database.UserProfileTable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class LoginViewModel (private val surveyDao: FarmerSurveyDao) : ViewModel() {
+class LoginViewModel(private val surveyDao: FarmerSurveyDao) : ViewModel() {
 
-    val isLoggedIn= surveyDao.getUserProfile().asLiveData()
+    val isLoggedIn = surveyDao.getUserProfile().asLiveData()
 
-    fun isPhoneNumberValid(phoneNumber: String) : Boolean{
-        if (phoneNumber.startsWith("+254")){
+    fun isPhoneNumberValid(phoneNumber: String): Boolean {
+        if (phoneNumber.startsWith("+254")) {
             return true
         }
         return false
     }
 
-    fun isPasswordValid(password: String) : Boolean{
-        if (password == "1234GYD%$"){
+    fun isPasswordValid(password: String): Boolean {
+        if (password == "1234GYD%$") {
             return true
         }
         return false
     }
 
-    fun updateIsLoggedIn(value: Boolean){
+    fun updateIsLoggedIn(value: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             surveyDao.insertToUserProfile(UserProfileTable("", value))
         }
@@ -34,7 +34,8 @@ class LoginViewModel (private val surveyDao: FarmerSurveyDao) : ViewModel() {
 
 }
 
-class LoginViewModelFactory(private val farmerSurveyDao: FarmerSurveyDao) : ViewModelProvider.Factory {
+class LoginViewModelFactory(private val farmerSurveyDao: FarmerSurveyDao) :
+    ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

@@ -16,7 +16,7 @@ import com.sogoamobile.farmersurvey.viewmodel.SurveyViewModelFactory
 
 class LoginActivity : AppCompatActivity() {
 
-    private val viewModel: LoginViewModel by viewModels{
+    private val viewModel: LoginViewModel by viewModels {
         LoginViewModelFactory(
             (application as FarmerSurveyApplication).database
                 .surveyDao()
@@ -29,31 +29,29 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         val view = binding.root
 
-        viewModel.isLoggedIn.observe(this,){item ->
+        viewModel.isLoggedIn.observe(this) { item ->
             // check if user is logged in & navigate to home page
-            if(item?.isLoggedIn == true){
-                startActivity(  Intent(this, MainActivity::class.java))
-            }else{
+            if (item?.isLoggedIn == true) {
+                startActivity(Intent(this, MainActivity::class.java))
+            } else {
                 setContentView(view)
             }
         }
 
-        binding.login.setOnClickListener{
+        binding.login.setOnClickListener {
             // validate login credentials
-            if(viewModel.isPasswordValid(binding.password.text.toString())
-                && viewModel.isPhoneNumberValid(binding.phoneNumber.text.toString())){
+            if (viewModel.isPasswordValid(binding.password.text.toString())
+                && viewModel.isPhoneNumberValid(binding.phoneNumber.text.toString())
+            ) {
                 // navigate to home page
                 viewModel.updateIsLoggedIn(true)
-                startActivity(  Intent(this, MainActivity::class.java))
+                startActivity(Intent(this, MainActivity::class.java))
                 sendEmail()
-            }
-            else if (!viewModel.isPhoneNumberValid(binding.phoneNumber.text.toString())){
+            } else if (!viewModel.isPhoneNumberValid(binding.phoneNumber.text.toString())) {
                 Toast.makeText(this, R.string.invalid_phone_number, Toast.LENGTH_SHORT).show()
-            }
-            else if (!viewModel.isPasswordValid(binding.password.text.toString())){
+            } else if (!viewModel.isPasswordValid(binding.password.text.toString())) {
                 Toast.makeText(this, R.string.invalid_password, Toast.LENGTH_SHORT).show()
-            }
-            else{
+            } else {
                 Toast.makeText(this, R.string.invalid_credentials, Toast.LENGTH_SHORT).show()
             }
         }
@@ -73,8 +71,7 @@ class LoginActivity : AppCompatActivity() {
         try {
             //start email intent
             startActivity(Intent.createChooser(mIntent, "Choose Email Client..."))
-        }
-        catch (e: Exception){
+        } catch (e: Exception) {
             Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
         }
 
